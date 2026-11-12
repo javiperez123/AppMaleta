@@ -1,114 +1,192 @@
-"use client";
-
 import Link from "next/link";
-import { useTripsList } from "@/hooks/useTrips";
-import { Plane, Plus, MapPin, Calendar, Sparkles } from "lucide-react";
+import { redirect } from "next/navigation";
+import { ArrowRight, Camera, CloudRain, Heart, ListChecks, Lock, MapPin, Shirt, Sun } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { getCurrentUser } from "@/server/auth";
+import { APP_NAME } from "@/lib/brand";
 
-export default function Home() {
-  const { trips, loading } = useTripsList();
-
+export default async function Landing({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  if (await getCurrentUser()) redirect("/home");
+  const sp = await searchParams;
   return (
-    <div className="flex flex-col gap-6 p-6 pb-32 relative">
-      
-      {/* HUD Header */}
-      <section className="flex justify-between items-center mb-4">
-        <div>
-          <p className="text-[12px] text-emerald-400 font-bold uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
-            <Sparkles size={12} /> Directorio Activo
+    <div className="min-h-dvh">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+        <Logo />
+        <nav aria-label="Cuenta" className="flex items-center gap-2">
+          <Link href="/login" className="btn btn-ghost">
+            Entrar
+          </Link>
+          <Link href="/signup" className="btn btn-primary hidden sm:inline-flex">
+            Crear cuenta
+          </Link>
+        </nav>
+      </header>
+
+      <main id="contenido">
+        {sp["cuenta-eliminada"] && (
+          <p role="status" className="mx-auto max-w-6xl px-5 text-sm font-medium text-sea sm:px-8">
+            Tu cuenta y todos tus datos se han eliminado.
           </p>
-          <h2 className="text-4xl font-black uppercase tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-            TUS <span className="text-gradient-primary">RUTAS</span>
-          </h2>
-        </div>
-        <Link 
-          href="/trip/create" 
-          className="w-14 h-14 rounded-full bg-gradient-primary p-0.5 shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:shadow-[0_0_30px_rgba(245,158,11,0.8)] transition-all duration-300 hover:scale-110 active:scale-95 group"
-        >
-           <div className="w-full h-full bg-stone-900/40 rounded-full flex items-center justify-center backdrop-blur-sm">
-             <Plus size={28} strokeWidth={2.5} className="text-white group-hover:rotate-90 transition-transform duration-500" />
-           </div>
-        </Link>
-      </section>
-
-      {/* Trips Directory */}
-      <section className="flex flex-col gap-5">
-        
-        {loading ? (
-           <div className="glass-card h-40 flex items-center justify-center">
-             <div className="w-8 h-8 rounded-full border-t-2 border-r-2 border-emerald-500 animate-spin" />
-           </div>
-        ) : trips.length > 0 ? (
-          trips.map((trip) => {
-             const startDate = trip.destinations[0]?.startDate;
-             const endDate = trip.destinations[trip.destinations.length-1]?.endDate;
-
-             return (
-               <Link href="/trip/plan" key={trip.id} className="glass-card p-5 group relative overflow-hidden interactive-glow block">
-                 
-                 {/* Shiny gradient overlay on hover */}
-                 <div className="absolute inset-0 bg-gradient-to-tr from-emerald-600/0 to-amber-500/0 group-hover:from-emerald-600/10 group-hover:to-amber-500/10 transition-colors duration-500" />
-
-                 <div className="flex justify-between items-start mb-5 relative z-10">
-                    <div>
-                      <h4 className="font-bold text-2xl tracking-tight text-white mb-1 group-hover:text-emerald-300 transition-colors">{trip.name}</h4>
-                      <div className="flex gap-2">
-                         <span className="bg-white/10 text-white/80 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md border border-white/5">
-                           {trip.style}
-                         </span>
-                         <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md border border-emerald-500/20">
-                           {trip.baggage}
-                         </span>
-                      </div>
-                    </div>
-                    <div className="w-12 h-12 rounded-full glass-card flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform duration-500 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-                      <Plane size={24} strokeWidth={2} />
-                    </div>
-                 </div>
-
-                 <div className="flex flex-col gap-3 relative z-10 pl-2 border-l border-white/10">
-                    {trip.destinations.slice(0, 3).map((dest, i) => (
-                      <div key={i} className="flex justify-between items-center text-sm font-medium text-stone-300">
-                        <span className="flex items-center gap-3 relative">
-                          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/30 group-hover:bg-amber-400 transition-colors" />
-                          <MapPin size={14} className="text-stone-500" />
-                          {dest.city}
-                        </span>
-                        <span className="font-mono text-xs opacity-70">{dest.startDate}</span>
-                      </div>
-                    ))}
-                    {trip.destinations.length > 3 && (
-                      <div className="text-[10px] font-bold uppercase mt-1 text-stone-500 ml-6">
-                        + {trip.destinations.length - 3} destinos
-                      </div>
-                    )}
-                 </div>
-
-                 <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-xs font-semibold uppercase relative z-10">
-                   <div className="flex items-center gap-2 text-stone-400">
-                     <Calendar size={14} /> 
-                     <span>{startDate} &mdash; {endDate}</span>
-                   </div>
-                   <div className="text-zinc-300 group-hover:text-white flex items-center gap-1 transition-colors">
-                     Ver Plan <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-                   </div>
-                 </div>
-               </Link>
-             )
-          })
-        ) : (
-           <div className="glass-card p-8 flex flex-col items-center justify-center text-center">
-             <div className="w-16 h-16 rounded-full bg-stone-800 flex items-center justify-center mb-4">
-               <Plane size={32} className="text-stone-500" />
-             </div>
-             <h4 className="font-bold text-xl text-white mb-2">Sin Rutas Activas</h4>
-             <p className="text-sm text-stone-400 mb-6">Inicia un nuevo itinerario para encender el motor de predicción.</p>
-             <Link href="/trip/create" className="w-full interactive-glow bg-gradient-primary rounded-full py-3 font-bold text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-               Crear Vuelo
-             </Link>
-           </div>
         )}
-      </section>
 
+        {/* Hero */}
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:pb-24 lg:pt-16">
+          <div>
+            <p className="eyebrow">Armario digital + planificador de viajes</p>
+            <h1 className="mt-4 text-[2.6rem] font-semibold leading-[1.05] sm:text-6xl">
+              Haz la maleta con lo que <em className="font-normal text-clay">ya tienes</em>.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-ink-2">
+              Fotografía tu ropa, cuéntanos a dónde vas y qué planes tienes, y {APP_NAME} te propone un look para cada día con
+              tus propias prendas. Al final, una lista de maleta práctica para no olvidar nada ni llevar de más.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/signup" className="btn btn-accent px-6 text-base">
+                Empezar gratis <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <Link href="#como-funciona" className="btn btn-secondary px-6 text-base">
+                Cómo funciona
+              </Link>
+            </div>
+          </div>
+          <HeroIllustration />
+        </section>
+
+        {/* Pasos */}
+        <section id="como-funciona" className="border-y border-line bg-card">
+          <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+            <h2 className="text-3xl font-semibold sm:text-4xl">Tres pasos, cero improvisación</h2>
+            <ol className="mt-10 grid gap-6 md:grid-cols-3">
+              {[
+                {
+                  icon: Camera,
+                  t: "Fotografía tu ropa",
+                  d: "Sube una foto por prenda desde el móvil. Indica el tipo, el estilo y si abriga; nosotros sugerimos el color.",
+                },
+                {
+                  icon: MapPin,
+                  t: "Prepara el viaje",
+                  d: "Destinos, fechas y planes de cada día: trabajo, cena especial, playa, senderismo…",
+                },
+                {
+                  icon: ListChecks,
+                  t: "Recibe looks y maleta",
+                  d: "Un look por día, editable, y la lista exacta de lo que tienes que meter en la maleta.",
+                },
+              ].map((s, i) => (
+                <li key={s.t} className="card p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="font-display text-3xl text-clay">{i + 1}</span>
+                    <s.icon size={22} className="text-ink-2" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-4 text-xl font-semibold">{s.t}</h3>
+                  <p className="mt-2 text-ink-2">{s.d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Honestidad y privacidad */}
+        <section className="mx-auto grid max-w-6xl gap-6 px-5 py-16 sm:px-8 md:grid-cols-3 lg:py-20">
+          <Feature icon={Shirt} title="Solo tu ropa">
+            Las propuestas usan únicamente prendas de tu armario. Si te falta algo (un chubasquero, un bañador), te lo decimos en
+            lugar de inventarlo.
+          </Feature>
+          <Feature icon={Sun} title="Tiempo real, sin adivinar">
+            Usamos la previsión meteorológica cuando existe. Si el viaje es lejano, te mostramos una estimación claramente
+            marcada, o puedes indicar tú la temperatura.
+          </Feature>
+          <Feature icon={Lock} title="Privado por defecto">
+            Tus fotos solo las ves tú. Puedes eliminar tu cuenta y todos tus datos cuando quieras.
+          </Feature>
+        </section>
+
+        <section className="px-5 pb-20 sm:px-8">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-ink px-6 py-14 text-center text-paper sm:px-12">
+            <h2 className="text-3xl font-semibold sm:text-4xl">¿Cuándo es tu próximo viaje?</h2>
+            <p className="mx-auto mt-3 max-w-xl text-[#d9d1c4]">Crea tu cuenta, añade tus primeras prendas y prepara la maleta hoy mismo.</p>
+            <Link href="/signup" className="btn btn-accent mt-8 px-7 text-base">
+              Crear mi armario <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-sm text-ink-3 sm:px-8">
+          <span>
+            © {new Date().getFullYear()} {APP_NAME}
+          </span>
+          <Link href="/privacy" className="underline-offset-4 hover:underline">
+            Privacidad
+          </Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function Feature({ icon: Icon, title, children }: { icon: typeof Shirt; title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-clay-soft text-clay">
+        <Icon size={22} aria-hidden="true" />
+      </div>
+      <h3 className="mt-4 text-xl font-semibold">{title}</h3>
+      <p className="mt-2 text-ink-2">{children}</p>
+    </div>
+  );
+}
+
+/** Ilustración (no son datos reales): una tarjeta de día con un look y una mini lista de maleta. */
+function HeroIllustration() {
+  const swatch = (bg: string, label: string) => (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="aspect-[3/4] w-full rounded-xl" style={{ background: bg }} />
+      <span className="text-[11px] font-medium text-ink-3">{label}</span>
+    </div>
+  );
+  return (
+    <div className="relative mx-auto w-full max-w-md" aria-hidden="true">
+      <div className="absolute -left-6 -top-6 h-40 w-40 rounded-full bg-clay-soft" />
+      <div className="absolute -bottom-8 -right-4 h-48 w-48 rounded-full bg-sea-soft" />
+      <div className="card relative rotate-[-1.5deg] p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="eyebrow">Día 2 · Ejemplo</p>
+            <p className="mt-1 font-display text-2xl font-semibold">Lisboa</p>
+          </div>
+          <span className="badge !bg-sea-soft !text-sea">
+            <CloudRain size={14} /> 14–19 °C
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-4 gap-2.5">
+          {swatch("linear-gradient(160deg,#e9e1cf,#d6c3a0)", "Jersey")}
+          {swatch("linear-gradient(160deg,#5a7699,#22304f)", "Vaquero")}
+          {swatch("linear-gradient(160deg,#e3c04a,#b98a55)", "Chubasq.")}
+          {swatch("linear-gradient(160deg,#f7f5f0,#cbbda8)", "Zapatillas")}
+        </div>
+        <p className="mt-4 rounded-xl bg-paper-2 px-3 py-2 text-sm text-ink-2">
+          Previsión de lluvia: añadimos tu chubasquero impermeable.
+        </p>
+      </div>
+      <div className="card relative ml-auto mt-[-14px] w-56 rotate-[2deg] p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <ListChecks size={16} /> Maleta · 9 prendas
+        </p>
+        <ul className="mt-2 space-y-1.5 text-sm text-ink-2">
+          <li className="flex items-center gap-2">
+            <span className="h-4 w-4 rounded border border-ink bg-ink" /> Vaquero ×4
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="h-4 w-4 rounded border border-line-strong" /> Chubasquero
+          </li>
+          <li className="flex items-center gap-2">
+            <Heart size={14} className="text-clay" /> 2 looks favoritos
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

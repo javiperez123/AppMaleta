@@ -1,43 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit } from "next/font/google";
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/fraunces";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "OutfitAI Pro",
-  description: "Sistema inteligente de equipaje estilo tech-lifestyle",
+  title: { default: `${APP_NAME} · ${APP_TAGLINE}`, template: `%s · ${APP_NAME}` },
+  description: APP_DESCRIPTION,
+  applicationName: APP_NAME,
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  themeColor: "#f7f3ec",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${outfit.variable}`}>
-      <body className="bg-[var(--color-canvas)] min-h-screen text-stone-50 antialiased selection:bg-emerald-600 selection:text-white">
-        
-        {/* Ambient background glows - Autumn/Forest theme */}
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-600/20 blur-[120px] rounded-full pointer-events-none z-0" />
-        <div className="fixed bottom-0 right-0 w-[600px] h-[600px] bg-amber-600/10 blur-[150px] rounded-full pointer-events-none z-0" />
-
-        <div className="max-w-md mx-auto relative flex flex-col md:max-w-lg lg:max-w-xl min-h-screen z-10">
-          <Header />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto pb-28 no-scrollbar relative z-10">
-            {children}
-          </main>
-          <BottomNav />
-        </div>
+    <html lang="es">
+      <body className="min-h-dvh bg-paper text-ink antialiased">
+        <a
+          href="#contenido"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
+        >
+          Saltar al contenido
+        </a>
+        {children}
       </body>
     </html>
   );
