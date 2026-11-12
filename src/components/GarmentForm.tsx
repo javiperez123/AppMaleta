@@ -124,7 +124,7 @@ export function GarmentForm({ garment, mode }: { garment?: Garment; mode: "creat
       setPhotoError(
         err instanceof Error && err.message
           ? err.message === "decode"
-            ? "No podemos leer esta foto (¿formato HEIC?). Prueba a hacer una captura o exportarla como JPG."
+            ? "No podemos leer este archivo como foto. Usa una imagen JPG, PNG o WebP (las fotos HEIC del iPhone, expórtalas como JPG)."
             : err.message
           : "No se ha podido subir la foto. Revisa tu conexión e inténtalo de nuevo.",
       );
@@ -286,6 +286,7 @@ export function GarmentForm({ garment, mode }: { garment?: Garment; mode: "creat
           allowNone="No lo sé"
         />
 
+        {!["shoes", "accessory", "swimwear"].includes(category) && (
         <ChoiceGroup
           name="warmth"
           legend="¿Cuánto abriga?"
@@ -294,6 +295,7 @@ export function GarmentForm({ garment, mode }: { garment?: Garment; mode: "creat
           onChange={setWarmth}
           allowNone="No lo sé"
         />
+        )}
 
         {(category === "outerwear" || category === "shoes" || category === "accessory") && (
           <label className="flex items-center gap-3">

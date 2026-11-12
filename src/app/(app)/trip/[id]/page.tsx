@@ -71,7 +71,7 @@ export default async function TripPage({
         </div>
       </header>
 
-      {sp.nuevo && (
+      {sp.nuevo && withLook === 0 && (
         <Notice tone="success" className="mb-4">
           Viaje creado. Ahora marca qué planes tienes cada día (opcional) y pulsa «Proponer looks».
         </Notice>

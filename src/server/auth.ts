@@ -36,7 +36,7 @@ interface AuthDb {
   resets: ResetToken[];
 }
 
-const AUTH_FILE = () => path.join(DATA_DIR, "auth.json");
+const AUTH_FILE = () => path.join(/*turbopackIgnore: true*/ DATA_DIR, "auth.json");
 const emptyAuth = (): AuthDb => ({ users: [], sessions: [], resets: [] });
 
 export type PublicUser = Pick<User, "id" | "email" | "name" | "createdAt">;

@@ -26,14 +26,14 @@ export async function saveImage(userId: string, bytes: Uint8Array, type: ImageTy
   const id = `${newId()}.${IMAGE_EXT[type]}`;
   const dir = uploadDir(userId);
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, id), bytes);
+  await fs.writeFile(path.join(/*turbopackIgnore: true*/ dir, id), bytes);
   return id;
 }
 
 export async function readImage(userId: string, imageId: string): Promise<Buffer | null> {
   if (!isValidImageId(imageId)) return null;
   try {
-    return await fs.readFile(path.join(uploadDir(userId), imageId));
+    return await fs.readFile(path.join(/*turbopackIgnore: true*/ uploadDir(userId), imageId));
   } catch {
     return null;
   }
@@ -41,12 +41,12 @@ export async function readImage(userId: string, imageId: string): Promise<Buffer
 
 async function deleteImage(userId: string, imageId?: string) {
   if (!imageId || !isValidImageId(imageId)) return;
-  await fs.rm(path.join(uploadDir(userId), imageId), { force: true });
+  await fs.rm(path.join(/*turbopackIgnore: true*/ uploadDir(userId), imageId), { force: true });
 }
 
 async function imageExists(userId: string, imageId: string): Promise<boolean> {
   try {
-    await fs.access(path.join(uploadDir(userId), imageId));
+    await fs.access(path.join(/*turbopackIgnore: true*/ uploadDir(userId), imageId));
     return true;
   } catch {
     return false;

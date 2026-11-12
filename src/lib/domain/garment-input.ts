@@ -68,11 +68,14 @@ export function parseGarmentInput(get: Get): { data?: GarmentInput; errors: Reco
   };
 }
 
+/** Categorías en las que "cuánto abriga" no aplica. */
+export const WARMTH_NOT_APPLICABLE = new Set(["shoes", "accessory", "swimwear"]);
+
 /** Campos que faltan para que las recomendaciones sean precisas. */
-export function missingFields(g: { color?: string; formality?: string; warmth?: string; imageId?: string }): string[] {
+export function missingFields(g: { category?: string; color?: string; formality?: string; warmth?: string; imageId?: string }): string[] {
   const m: string[] = [];
   if (!g.formality) m.push("estilo");
-  if (!g.warmth) m.push("abrigo");
+  if (!g.warmth && !WARMTH_NOT_APPLICABLE.has(g.category ?? "")) m.push("abrigo");
   if (!g.color) m.push("color");
   if (!g.imageId) m.push("foto");
   return m;

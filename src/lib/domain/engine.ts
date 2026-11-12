@@ -1,6 +1,7 @@
 // Motor de propuestas de looks. Reglas deterministas y explicables:
 // solo usa prendas reales del armario y el clima disponible (nunca inventa datos).
 import { ACTIVITY_LABELS } from "./labels.ts";
+import { WARMTH_NOT_APPLICABLE } from "./garment-input.ts";
 import type {
   ActivityType,
   BaggageType,
@@ -110,7 +111,7 @@ function scoreGarment(g: Garment, need: Need, ctx: DayContext): number {
   }
   if (g.preference === "love") s += 2;
   if (g.preference === "avoid") s -= 10;
-  if (!g.formality || !g.warmth) s -= 0.5; // a igualdad, preferir prendas con datos completos
+  if (!g.formality || (!g.warmth && !WARMTH_NOT_APPLICABLE.has(g.category))) s -= 0.5; // a igualdad, preferir prendas con datos completos
   const used = ctx.usedCounts.get(g.id) ?? 0;
   const reuse = REUSE_WEIGHT[ctx.baggage];
   if (g.category === "top" || g.category === "dress") {
@@ -200,7 +201,7 @@ export function generateLook(garments: Garment[], day: TripDay, ctx: DayContext)
     if (formalityOf(g) < need.min) {
       warnings.push(`«${g.name}» es menos formal de lo que pide el plan; no hay una opción más arreglada en tu armario.`);
     }
-    if (!g.formality || !g.warmth) {
+    if (!g.formality || (!g.warmth && !WARMTH_NOT_APPLICABLE.has(g.category))) {
       approximate = true;
       warnings.push(`A «${g.name}» le faltan datos (estilo o abrigo). Complétalos para afinar las propuestas.`);
     }

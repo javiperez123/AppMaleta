@@ -7,9 +7,9 @@ import type { PublicUser } from "@/server/auth";
 
 export function AppShell({ user, children }: { user: PublicUser; children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr] print:block">
       {/* Escritorio: barra lateral */}
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-card px-4 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-card px-4 py-6 lg:flex print:hidden">
         <div className="px-2">
           <Logo href="/home" />
         </div>
@@ -36,7 +36,7 @@ export function AppShell({ user, children }: { user: PublicUser; children: React
       </aside>
 
       {/* Móvil: cabecera */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur lg:hidden print:hidden">
         <Logo href="/home" />
         <div className="flex items-center gap-1">
           <Link href="/train" className="btn btn-ghost btn-icon" aria-label="Mi estilo">

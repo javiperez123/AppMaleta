@@ -17,7 +17,7 @@ import { emptyUserData, type UserData } from "@/lib/domain/types";
  * con varias instancias, sustituir este módulo por una base de datos (ver docs/LANZAMIENTO.md).
  */
 
-export const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(process.cwd(), "data"));
+export const DATA_DIR = path.resolve(/*turbopackIgnore: true*/ process.env.DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), "data"));
 
 const SAFE_ID = /^[a-zA-Z0-9_-]{8,64}$/;
 export function assertSafeId(id: string): void {
@@ -74,7 +74,7 @@ export async function readJsonLocked<T>(file: string, fallback: () => T): Promis
 
 function userFile(userId: string): string {
   assertSafeId(userId);
-  return path.join(DATA_DIR, "users", `${userId}.json`);
+  return path.join(/*turbopackIgnore: true*/ DATA_DIR, "users", `${userId}.json`);
 }
 
 export async function readUserData(userId: string): Promise<UserData> {
@@ -88,12 +88,12 @@ export async function updateUserData<R>(userId: string, fn: (d: UserData) => R |
 export async function deleteUserFiles(userId: string): Promise<void> {
   assertSafeId(userId);
   await fs.rm(userFile(userId), { force: true });
-  await fs.rm(path.join(DATA_DIR, "uploads", userId), { recursive: true, force: true });
+  await fs.rm(path.join(/*turbopackIgnore: true*/ DATA_DIR, "uploads", userId), { recursive: true, force: true });
 }
 
 // ---------- Fotos ----------
 
 export function uploadDir(userId: string): string {
   assertSafeId(userId);
-  return path.join(DATA_DIR, "uploads", userId);
+  return path.join(/*turbopackIgnore: true*/ DATA_DIR, "uploads", userId);
 }
