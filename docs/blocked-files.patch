@@ -1,0 +1,651 @@
+diff --git a/src/app/(app)/today/page.tsx b/src/app/(app)/today/page.tsx
+index 4285c8a..1d61c92 100644
+--- a/src/app/(app)/today/page.tsx
++++ b/src/app/(app)/today/page.tsx
+@@ -1,44 +1,165 @@
+ import type { Metadata } from "next";
+ import Link from "next/link";
+-import { Sun } from "lucide-react";
++import { Cloud, RefreshCw, Settings, Sun, Thermometer, Wind } from "lucide-react";
+ import { PageHeader } from "@/components/AppShell";
+-import { EmptyState } from "@/components/EmptyState";
+ import { requireUser } from "@/server/auth";
+ import { getUserData } from "@/server/data";
+ import { formatLong, todayIso } from "@/lib/domain/dates";
+ import { DayCard } from "../trip/[id]/DayCard";
++import { RefreshDailyButton } from "./RefreshDailyButton";
+ 
+ export const metadata: Metadata = { title: "Look de hoy" };
+ 
++function WeatherBadge({ weather }: { weather: { tempMin: number; tempMax: number; wmoCode?: number } }) {
++  const avg = Math.round((weather.tempMin + weather.tempMax) / 2);
++  const icons: Record<number, { icon: typeof Sun; label: string }> = {
++    0: { icon: Sun, label: "Despejado" },
++    1: { icon: Sun, label: "Mayormente despejado" },
++    2: { icon: Cloud, label: "Parcialmente nublado" },
++    3: { icon: Cloud, label: "Nublado" },
++  };
++  const { icon: Icon, label } = (weather.wmoCode !== undefined ? icons[weather.wmoCode] : undefined) ?? { icon: Cloud, label: "Variable" };
++  return (
++    <div className="flex items-center gap-3 rounded-xl border border-line bg-card px-4 py-3">
++      <Icon size={22} className="text-amber-500" aria-hidden="true" />
++      <div>
++        <p className="font-medium">{label}</p>
++        <p className="text-sm text-ink-2 flex items-center gap-1">
++          <Thermometer size={12} /> {weather.tempMin}° – {weather.tempMax}° · media {avg}°C
++        </p>
++      </div>
++    </div>
++  );
++}
++
+ export default async function TodayPage() {
+   const user = await requireUser();
+   const data = await getUserData(user.id);
+   const today = todayIso();
++
++  // Check if on a trip today
+   const trip = data.trips.find((t) => t.days.some((d) => d.date === today));
+   const idx = trip?.days.findIndex((d) => d.date === today) ?? -1;
+ 
++  if (trip && idx >= 0) {
++    return (
++      <>
++        <PageHeader eyebrow={formatLong(today)} title="Tu look de hoy" description={trip.name} />
++        <DayCard
++          tripId={trip.id}
++          tripName={trip.name}
++          day={trip.days[idx]}
++          index={idx}
++          isToday
++          garments={data.garments}
++          favorites={data.favorites}
++        />
++        <Link href={`/trip/${trip.id}`} className="btn btn-secondary mt-6">
++          Ver todo el viaje
++        </Link>
++      </>
++    );
++  }
++
++  // Not on a trip — show daily look from settings
++  const daily = data.daily;
++  const settings = data.settings;
++  const hasCity = !!settings?.homeCity;
++  const dailyIsToday = daily?.date === today;
++
+   return (
+     <>
+-      <PageHeader eyebrow={formatLong(today)} title="Tu look de hoy" description={trip ? trip.name : undefined} />
+-      {trip && idx >= 0 ? (
+-        <>
+-          <DayCard tripId={trip.id} day={trip.days[idx]} index={idx} isToday garments={data.garments} favorites={data.favorites} />
+-          <Link href={`/trip/${trip.id}`} className="btn btn-secondary mt-6">
+-            Ver todo el viaje
++      <PageHeader
++        eyebrow={formatLong(today)}
++        title="Look de hoy"
++        description={hasCity ? `En ${settings!.homeCity}` : "Configura tu ciudad para ver el tiempo"}
++      />
++
++      {!hasCity ? (
++        <div className="rounded-2xl border border-dashed border-line p-8 text-center max-w-md mx-auto">
++          <Settings size={32} className="mx-auto text-ink-3 mb-3" />
++          <h2 className="font-semibold mb-2">Configura tu ciudad</h2>
++          <p className="text-sm text-ink-2 mb-4">
++            Para ver el look del día con el tiempo de tu ciudad, primero indícanos dónde vives.
++          </p>
++          <Link href="/account" className="btn btn-primary">
++            Ir a Ajustes
+           </Link>
+-        </>
++        </div>
++      ) : !dailyIsToday ? (
++        <div className="rounded-2xl border border-dashed border-line p-8 text-center max-w-md mx-auto">
++          <Sun size={32} className="mx-auto text-amber-400 mb-3" />
++          <h2 className="font-semibold mb-2">Tu look de hoy está listo para generarse</h2>
++          <p className="text-sm text-ink-2 mb-4">
++            Pulsa el botón para que la app proponga un look adaptado al tiempo en {settings!.homeCity}.
++          </p>
++          <RefreshDailyButton />
++        </div>
+       ) : (
+-        <EmptyState
+-          icon={Sun}
+-          title="Hoy no estás de viaje"
+-          action={
+-            <Link href="/trips" className="btn btn-primary">
+-              Ver mis viajes
+-            </Link>
+-          }
+-        >
+-          Cuando estés de viaje, aquí verás el look del día con el tiempo de tu destino.
+-        </EmptyState>
++        <div className="flex flex-col gap-6 max-w-2xl">
++          {/* Tiempo */}
++          {daily?.weather && (
++            <WeatherBadge weather={daily.weather} />
++          )}
++
++          {/* Look */}
++          {daily?.look && daily.look.garmentIds.length > 0 ? (
++            <div>
++              <div className="flex items-center justify-between mb-3">
++                <h2 className="text-lg font-semibold">Tu propuesta para hoy</h2>
++                <RefreshDailyButton compact />
++              </div>
++              <div className="rounded-2xl border border-line bg-card p-5">
++                <ul className="flex flex-col gap-3">
++                  {daily.look.garmentIds.map((gid) => {
++                    const g = data.garments.find((x) => x.id === gid);
++                    if (!g) return null;
++                    return (
++                      <li key={gid} className="flex items-center gap-3">
++                        {g.imageId ? (
++                          // eslint-disable-next-line @next/next/no-img-element
++                          <img
++                            src={`/api/photos/${g.imageId}`}
++                            alt={g.name}
++                            className="h-12 w-12 rounded-xl object-cover shrink-0"
++                          />
++                        ) : (
++                          <div className="h-12 w-12 rounded-xl bg-paper-2 shrink-0" />
++                        )}
++                        <div>
++                          <p className="font-medium">{g.name}</p>
++                          {g.color && <p className="text-xs text-ink-3">{g.color}</p>}
++                        </div>
++                      </li>
++                    );
++                  })}
++                </ul>
++                {daily.look.reasons && daily.look.reasons.length > 0 && (
++                  <div className="mt-4 border-t border-line pt-4">
++                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">Por qué este look</p>
++                    <ul className="flex flex-wrap gap-1.5">
++                      {daily.look.reasons.map((r, i) => (
++                        <li key={i} className="chip text-xs">{r}</li>
++                      ))}
++                    </ul>
++                  </div>
++                )}
++              </div>
++            </div>
++          ) : (
++            <div className="rounded-2xl border border-dashed border-line p-6 text-center text-ink-2">
++              <Wind size={24} className="mx-auto mb-2" />
++              <p>No hay prendas disponibles para proponer un look hoy.</p>
++              <Link href="/wardrobe" className="btn btn-secondary mt-3">
++                Ver armario
++              </Link>
++            </div>
++          )}
++
++          <Link href="/probador" className="btn btn-secondary self-start">
++            Probar en mi personaje
++          </Link>
++        </div>
+       )}
+     </>
+   );
+diff --git a/src/app/(app)/wardrobe/page.tsx b/src/app/(app)/wardrobe/page.tsx
+index 78214f0..4f1857b 100644
+--- a/src/app/(app)/wardrobe/page.tsx
++++ b/src/app/(app)/wardrobe/page.tsx
+@@ -7,6 +7,7 @@ import { Notice } from "@/components/Notice";
+ import { requireUser } from "@/server/auth";
+ import { getUserData } from "@/server/data";
+ import { WardrobeBrowser } from "./WardrobeBrowser";
++import { BulkUpload } from "./BulkUpload";
+ 
+ export const metadata: Metadata = { title: "Armario" };
+ 
+@@ -49,7 +50,12 @@ export default async function WardrobePage({ searchParams }: { searchParams: Pro
+           pantalones, una chaqueta y tu calzado favorito.
+         </EmptyState>
+       ) : (
+-        <WardrobeBrowser garments={garments} highlight={sp.nueva ?? sp.editada} />
++        <>
++          <div className="mb-6">
++            <BulkUpload />
++          </div>
++          <WardrobeBrowser garments={garments} highlight={sp.nueva ?? sp.editada} />
++        </>
+       )}
+     </>
+   );
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 952d3d4..02c4c02 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -243,3 +243,48 @@ body {
+     scroll-behavior: auto !important;
+   }
+ }
++
++/* ───────────────── Modo oscuro ───────────────── */
++@media (prefers-color-scheme: dark) {
++  :root:not([data-theme="light"]) {
++    --color-paper: #1a1714;
++    --color-paper-2: #252118;
++    --color-card: #211e1a;
++    --color-ink: #f0ebe3;
++    --color-ink-2: #b8afa5;
++    --color-ink-3: #8a8178;
++    --color-line: #332e28;
++    --color-line-strong: #4a4238;
++
++    --color-clay: #d4694e;
++    --color-clay-dark: #c05840;
++    --color-clay-soft: #3d1f16;
++    --color-sea: #5a9994;
++    --color-sea-soft: #152a28;
++    --color-sun: #c99a3a;
++    --color-sun-soft: #2a2008;
++    --color-danger: #d1524c;
++    --color-danger-soft: #3a1512;
++  }
++}
++
++:root[data-theme="dark"] {
++  --color-paper: #1a1714;
++  --color-paper-2: #252118;
++  --color-card: #211e1a;
++  --color-ink: #f0ebe3;
++  --color-ink-2: #b8afa5;
++  --color-ink-3: #8a8178;
++  --color-line: #332e28;
++  --color-line-strong: #4a4238;
++
++  --color-clay: #d4694e;
++  --color-clay-dark: #c05840;
++  --color-clay-soft: #3d1f16;
++  --color-sea: #5a9994;
++  --color-sea-soft: #152a28;
++  --color-sun: #c99a3a;
++  --color-sun-soft: #2a2008;
++  --color-danger: #d1524c;
++  --color-danger-soft: #3a1512;
++}
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index 88214e2..c69810b 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -3,6 +3,8 @@ import "@fontsource-variable/outfit";
+ import "@fontsource-variable/fraunces";
+ import "./globals.css";
+ import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
++import { ThemeScript } from "@/components/ThemeToggle";
++import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+ 
+ export const metadata: Metadata = {
+   title: { default: `${APP_NAME} · ${APP_TAGLINE}`, template: `%s · ${APP_NAME}` },
+@@ -18,7 +20,10 @@ export const viewport: Viewport = {
+ 
+ export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+   return (
+-    <html lang="es">
++    <html lang="es" suppressHydrationWarning>
++      <head>
++        <ThemeScript />
++      </head>
+       <body className="min-h-dvh bg-paper text-ink antialiased">
+         <a
+           href="#contenido"
+@@ -27,6 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
+           Saltar al contenido
+         </a>
+         {children}
++        <ServiceWorkerRegistrar />
+       </body>
+     </html>
+   );
+diff --git a/src/app/page.tsx b/src/app/page.tsx
+index deca349..22a9065 100644
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -1,6 +1,9 @@
+ import Link from "next/link";
+ import { redirect } from "next/navigation";
+-import { ArrowRight, Camera, CloudRain, Heart, ListChecks, Lock, MapPin, Shirt, Sun } from "lucide-react";
++import {
++  ArrowRight, BarChart2, Camera, CloudRain, Heart, ListChecks, Lock, MapPin,
++  Shirt, Sparkles, Sun, User, Zap,
++} from "lucide-react";
+ import { Logo } from "@/components/Logo";
+ import { getCurrentUser } from "@/server/auth";
+ import { APP_NAME } from "@/lib/brand";
+@@ -9,13 +12,11 @@ export default async function Landing({ searchParams }: { searchParams: Promise<
+   if (await getCurrentUser()) redirect("/home");
+   const sp = await searchParams;
+   return (
+-    <div className="min-h-dvh">
++    <div className="min-h-dvh overflow-x-hidden">
+       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+         <Logo />
+         <nav aria-label="Cuenta" className="flex items-center gap-2">
+-          <Link href="/login" className="btn btn-ghost">
+-            Entrar
+-          </Link>
++          <Link href="/login" className="btn btn-ghost">Entrar</Link>
+           <Link href="/signup" className="btn btn-primary hidden sm:inline-flex">
+             Crear cuenta
+           </Link>
+@@ -29,17 +30,33 @@ export default async function Landing({ searchParams }: { searchParams: Promise<
+           </p>
+         )}
+ 
+-        {/* Hero */}
+-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:pb-24 lg:pt-16">
++        {/* ── Hero ──────────────────────────────────────── */}
++        <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:pb-28 lg:pt-16">
+           <div>
+-            <p className="eyebrow">Armario digital + planificador de viajes</p>
+-            <h1 className="mt-4 text-[2.6rem] font-semibold leading-[1.05] sm:text-6xl">
+-              Haz la maleta con lo que <em className="font-normal text-clay">ya tienes</em>.
++            <div className="inline-flex items-center gap-2 rounded-full border border-clay/30 bg-clay-soft px-3 py-1 text-xs font-semibold uppercase tracking-wide text-clay">
++              <Sparkles size={12} aria-hidden="true" /> Armario inteligente
++            </div>
++            <h1 className="mt-5 text-[2.6rem] font-semibold leading-[1.05] sm:text-6xl">
++              Haz la maleta con lo que{" "}
++              <em className="font-normal text-clay">ya tienes</em>.
+             </h1>
+             <p className="mt-6 max-w-xl text-lg text-ink-2">
+-              Fotografía tu ropa, cuéntanos a dónde vas y qué planes tienes, y {APP_NAME} te propone un look para cada día con
+-              tus propias prendas. Al final, una lista de maleta práctica para no olvidar nada ni llevar de más.
++              Digitaliza tu ropa, cuéntanos a dónde vas y {APP_NAME} te propone el look perfecto para cada día
++              —con tiempo real, tu estilo y lo que llevas en el armario.
+             </p>
++            <ul className="mt-5 flex flex-col gap-2 text-sm text-ink-2">
++              {[
++                "Looks diarios adaptados al tiempo de tu ciudad",
++                "Probador virtual con tu propio avatar",
++                "Cápsula optimizada: lleva solo lo necesario",
++                "Estadísticas de tu armario de un vistazo",
++              ].map((f) => (
++                <li key={f} className="flex items-center gap-2">
++                  <span className="h-1.5 w-1.5 rounded-full bg-clay shrink-0" aria-hidden="true" />
++                  {f}
++                </li>
++              ))}
++            </ul>
+             <div className="mt-8 flex flex-wrap gap-3">
+               <Link href="/signup" className="btn btn-accent px-6 text-base">
+                 Empezar gratis <ArrowRight size={18} aria-hidden="true" />
+@@ -52,29 +69,38 @@ export default async function Landing({ searchParams }: { searchParams: Promise<
+           <HeroIllustration />
+         </section>
+ 
+-        {/* Pasos */}
++        {/* ── Pasos ─────────────────────────────────────── */}
+         <section id="como-funciona" className="border-y border-line bg-card">
+           <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+-            <h2 className="text-3xl font-semibold sm:text-4xl">Tres pasos, cero improvisación</h2>
+-            <ol className="mt-10 grid gap-6 md:grid-cols-3">
++            <div className="text-center mb-12">
++              <p className="eyebrow mb-2">Proceso</p>
++              <h2 className="text-3xl font-semibold sm:text-4xl">Tres pasos, cero improvisación</h2>
++            </div>
++            <ol className="grid gap-6 md:grid-cols-3">
+               {[
+                 {
+                   icon: Camera,
+                   t: "Fotografía tu ropa",
+-                  d: "Sube una foto por prenda desde el móvil. Indica el tipo, el estilo y si abriga; nosotros sugerimos el color.",
++                  d: "Sube una foto por prenda desde el móvil. Indicamos automáticamente el color y tú añades el tipo y el estilo.",
++                  badge: "Rápido",
+                 },
+                 {
+                   icon: MapPin,
+                   t: "Prepara el viaje",
+                   d: "Destinos, fechas y planes de cada día: trabajo, cena especial, playa, senderismo…",
++                  badge: "Flexible",
+                 },
+                 {
+                   icon: ListChecks,
+                   t: "Recibe looks y maleta",
+-                  d: "Un look por día, editable, y la lista exacta de lo que tienes que meter en la maleta.",
++                  d: "Un look por día editable, tu cápsula optimizada y la lista exacta de lo que llevar.",
++                  badge: "Práctico",
+                 },
+               ].map((s, i) => (
+-                <li key={s.t} className="card p-6">
++                <li key={s.t} className="card p-6 relative overflow-hidden">
++                  <div className="absolute top-4 right-4">
++                    <span className="chip text-xs">{s.badge}</span>
++                  </div>
+                   <div className="flex items-center gap-3">
+                     <span className="font-display text-3xl text-clay">{i + 1}</span>
+                     <s.icon size={22} className="text-ink-2" aria-hidden="true" />
+@@ -87,105 +113,177 @@ export default async function Landing({ searchParams }: { searchParams: Promise<
+           </div>
+         </section>
+ 
+-        {/* Honestidad y privacidad */}
+-        <section className="mx-auto grid max-w-6xl gap-6 px-5 py-16 sm:px-8 md:grid-cols-3 lg:py-20">
+-          <Feature icon={Shirt} title="Solo tu ropa">
+-            Las propuestas usan únicamente prendas de tu armario. Si te falta algo (un chubasquero, un bañador), te lo decimos en
+-            lugar de inventarlo.
+-          </Feature>
+-          <Feature icon={Sun} title="Tiempo real, sin adivinar">
+-            Usamos la previsión meteorológica cuando existe. Si el viaje es lejano, te mostramos una estimación claramente
+-            marcada, o puedes indicar tú la temperatura.
+-          </Feature>
+-          <Feature icon={Lock} title="Privado por defecto">
+-            Tus fotos solo las ves tú. Puedes eliminar tu cuenta y todos tus datos cuando quieras.
+-          </Feature>
++        {/* ── Features destacados ───────────────────────── */}
++        <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
++          <div className="text-center mb-12">
++            <p className="eyebrow mb-2">Funcionalidades</p>
++            <h2 className="text-3xl font-semibold sm:text-4xl">Todo lo que necesitas para viajar bien</h2>
++          </div>
++          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
++            <Feature icon={User} title="Probador virtual" color="clay">
++              Visualiza tus combinaciones en un avatar personalizado antes de decidir qué llevar.
++            </Feature>
++            <Feature icon={Zap} title="Cápsula inteligente" color="sea">
++              La app elige las prendas más versátiles para tu viaje: más combinaciones con menos bulto.
++            </Feature>
++            <Feature icon={BarChart2} title="Tu armario en cifras" color="sun">
++              Looks posibles, prendas más usadas, categorías, colores — conoce tu armario de verdad.
++            </Feature>
++            <Feature icon={Sun} title="Look de hoy" color="clay">
++              Cada día, un look adaptado al tiempo de tu ciudad. Regenera con un toque si no te convence.
++            </Feature>
++          </div>
++          <div className="mt-5 grid gap-5 sm:grid-cols-3">
++            <Feature icon={Shirt} title="Solo tu ropa" color="sea">
++              Las propuestas usan únicamente prendas de tu armario. Si falta algo te lo decimos — sin inventar.
++            </Feature>
++            <Feature icon={Camera} title="Tiempo real" color="sun">
++              Usamos la previsión meteorológica cuando existe. Si es lejano, estimamos y lo marcamos claramente.
++            </Feature>
++            <Feature icon={Lock} title="Privado por defecto" color="clay">
++              Tus fotos solo las ves tú. Elimina tu cuenta y todos tus datos cuando quieras.
++            </Feature>
++          </div>
+         </section>
+ 
++        {/* ── CTA final ─────────────────────────────────── */}
+         <section className="px-5 pb-20 sm:px-8">
+-          <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-ink px-6 py-14 text-center text-paper sm:px-12">
++          <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-ink px-6 py-16 text-center text-paper sm:px-12">
++            <div className="inline-flex items-center gap-2 rounded-full border border-paper/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-paper/70 mb-6">
++              <Sparkles size={12} aria-hidden="true" /> Sin tarjeta de crédito
++            </div>
+             <h2 className="text-3xl font-semibold sm:text-4xl">¿Cuándo es tu próximo viaje?</h2>
+-            <p className="mx-auto mt-3 max-w-xl text-[#d9d1c4]">Crea tu cuenta, añade tus primeras prendas y prepara la maleta hoy mismo.</p>
+-            <Link href="/signup" className="btn btn-accent mt-8 px-7 text-base">
+-              Crear mi armario <ArrowRight size={18} aria-hidden="true" />
+-            </Link>
++            <p className="mx-auto mt-3 max-w-xl text-[#d9d1c4]">
++              Crea tu cuenta, añade tus primeras prendas y prepara la maleta hoy mismo.
++            </p>
++            <div className="mt-8 flex flex-wrap justify-center gap-3">
++              <Link href="/signup" className="btn btn-accent px-7 text-base">
++                Crear mi armario gratis <ArrowRight size={18} aria-hidden="true" />
++              </Link>
++              <Link href="/login" className="btn px-7 text-base border border-paper/30 text-paper hover:bg-paper/10">
++                Ya tengo cuenta
++              </Link>
++            </div>
+           </div>
+         </section>
+       </main>
+ 
+       <footer className="border-t border-line">
+         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-sm text-ink-3 sm:px-8">
+-          <span>
+-            © {new Date().getFullYear()} {APP_NAME}
+-          </span>
+-          <Link href="/privacy" className="underline-offset-4 hover:underline">
+-            Privacidad
+-          </Link>
++          <span>© {new Date().getFullYear()} {APP_NAME}</span>
++          <Link href="/privacy" className="underline-offset-4 hover:underline">Privacidad</Link>
+         </div>
+       </footer>
+     </div>
+   );
+ }
+ 
+-function Feature({ icon: Icon, title, children }: { icon: typeof Shirt; title: string; children: React.ReactNode }) {
++type FeatureColor = "clay" | "sea" | "sun";
++function Feature({
++  icon: Icon,
++  title,
++  children,
++  color = "clay",
++}: {
++  icon: typeof Shirt;
++  title: string;
++  children: React.ReactNode;
++  color?: FeatureColor;
++}) {
++  const colorMap: Record<FeatureColor, string> = {
++    clay: "bg-clay-soft text-clay",
++    sea: "bg-sea-soft text-sea",
++    sun: "bg-sun-soft text-sun",
++  };
+   return (
+-    <div>
+-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-clay-soft text-clay">
++    <div className="rounded-2xl border border-line bg-card p-6">
++      <div className={`flex h-11 w-11 items-center justify-center rounded-full ${colorMap[color]}`}>
+         <Icon size={22} aria-hidden="true" />
+       </div>
+-      <h3 className="mt-4 text-xl font-semibold">{title}</h3>
+-      <p className="mt-2 text-ink-2">{children}</p>
++      <h3 className="mt-4 text-lg font-semibold">{title}</h3>
++      <p className="mt-2 text-sm text-ink-2">{children}</p>
+     </div>
+   );
+ }
+ 
+-/** Ilustración (no son datos reales): una tarjeta de día con un look y una mini lista de maleta. */
++/** Ilustración del hero: tarjeta de día + mini avatar + cápsula */
+ function HeroIllustration() {
+-  const swatch = (bg: string, label: string) => (
+-    <div className="flex flex-col items-center gap-1.5">
+-      <div className="aspect-[3/4] w-full rounded-xl" style={{ background: bg }} />
+-      <span className="text-[11px] font-medium text-ink-3">{label}</span>
+-    </div>
+-  );
+   return (
+     <div className="relative mx-auto w-full max-w-md" aria-hidden="true">
+-      <div className="absolute -left-6 -top-6 h-40 w-40 rounded-full bg-clay-soft" />
+-      <div className="absolute -bottom-8 -right-4 h-48 w-48 rounded-full bg-sea-soft" />
+-      <div className="card relative rotate-[-1.5deg] p-5">
++      {/* Círculos decorativos */}
++      <div className="absolute -left-6 -top-6 h-40 w-40 rounded-full bg-clay-soft opacity-60" />
++      <div className="absolute -bottom-8 -right-4 h-48 w-48 rounded-full bg-sea-soft opacity-60" />
++
++      {/* Tarjeta principal: look del día */}
++      <div className="card relative rotate-[-1.5deg] p-5 shadow-card">
+         <div className="flex items-center justify-between">
+           <div>
+-            <p className="eyebrow">Día 2 · Ejemplo</p>
+-            <p className="mt-1 font-display text-2xl font-semibold">Lisboa</p>
++            <p className="eyebrow">Día 2 · Roma</p>
++            <p className="mt-1 font-display text-2xl font-semibold">Look de hoy</p>
+           </div>
+           <span className="badge !bg-sea-soft !text-sea">
+-            <CloudRain size={14} /> 14–19 °C
++            <CloudRain size={14} /> 15–21 °C
+           </span>
+         </div>
+         <div className="mt-4 grid grid-cols-4 gap-2.5">
+-          {swatch("linear-gradient(160deg,#e9e1cf,#d6c3a0)", "Jersey")}
+-          {swatch("linear-gradient(160deg,#5a7699,#22304f)", "Vaquero")}
+-          {swatch("linear-gradient(160deg,#e3c04a,#b98a55)", "Chubasq.")}
+-          {swatch("linear-gradient(160deg,#f7f5f0,#cbbda8)", "Zapatillas")}
++          {[
++            { bg: "linear-gradient(160deg,#e9e1cf,#d6c3a0)", label: "Jersey" },
++            { bg: "linear-gradient(160deg,#5a7699,#22304f)", label: "Vaquero" },
++            { bg: "linear-gradient(160deg,#e3c04a,#b98a55)", label: "Chubasq." },
++            { bg: "linear-gradient(160deg,#f7f5f0,#cbbda8)", label: "Zapatillas" },
++          ].map((s) => (
++            <div key={s.label} className="flex flex-col items-center gap-1.5">
++              <div className="aspect-[3/4] w-full rounded-xl" style={{ background: s.bg }} />
++              <span className="text-[11px] font-medium text-ink-3">{s.label}</span>
++            </div>
++          ))}
+         </div>
+-        <p className="mt-4 rounded-xl bg-paper-2 px-3 py-2 text-sm text-ink-2">
+-          Previsión de lluvia: añadimos tu chubasquero impermeable.
++        <p className="mt-4 rounded-xl bg-paper-2 px-3 py-2 text-xs text-ink-2">
++          ☂️ Previsión de lluvia — añadimos tu chubasquero impermeable.
+         </p>
+       </div>
+-      <div className="card relative ml-auto mt-[-14px] w-56 rotate-[2deg] p-4">
++
++      {/* Tarjeta mini: cápsula */}
++      <div className="card relative ml-auto mt-[-14px] w-56 rotate-[2deg] p-4 shadow-card">
+         <p className="flex items-center gap-2 text-sm font-semibold">
+-          <ListChecks size={16} /> Maleta · 9 prendas
++          <Zap size={15} className="text-sea" /> Cápsula · 7 días
+         </p>
+-        <ul className="mt-2 space-y-1.5 text-sm text-ink-2">
++        <ul className="mt-2 space-y-1.5 text-xs text-ink-2">
+           <li className="flex items-center gap-2">
+-            <span className="h-4 w-4 rounded border border-ink bg-ink" /> Vaquero ×4
++            <span className="h-3 w-3 rounded-sm bg-[#5a7699]" /> 2 pantalones
+           </li>
+           <li className="flex items-center gap-2">
+-            <span className="h-4 w-4 rounded border border-line-strong" /> Chubasquero
++            <span className="h-3 w-3 rounded-sm bg-[#d6c3a0]" /> 4 tops
+           </li>
+           <li className="flex items-center gap-2">
+-            <Heart size={14} className="text-clay" /> 2 looks favoritos
++            <Heart size={12} className="text-clay" /> 12 looks posibles
+           </li>
+         </ul>
++        <p className="mt-2 text-[10px] text-ink-3 font-medium">Solo 9 prendas · volumen cabina ✓</p>
++      </div>
++
++      {/* Tarjeta mini: avatar */}
++      <div className="card absolute -left-4 bottom-4 w-28 p-3 shadow-card rotate-[-3deg]">
++        <p className="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2">Mi personaje</p>
++        {/* Mini avatar SVG */}
++        <svg viewBox="0 0 60 90" className="mx-auto w-12 h-16">
++          {/* Shoes */}
++          <ellipse cx="22" cy="82" rx="7" ry="3" fill="#5a7699"/>
++          <ellipse cx="38" cy="82" rx="7" ry="3" fill="#5a7699"/>
++          {/* Legs */}
++          <rect x="18" y="62" width="10" height="20" rx="4" fill="#22304f"/>
++          <rect x="32" y="62" width="10" height="20" rx="4" fill="#22304f"/>
++          {/* Torso */}
++          <rect x="16" y="38" width="28" height="28" rx="8" fill="#e9e1cf"/>
++          {/* Head */}
++          <ellipse cx="30" cy="28" rx="13" ry="15" fill="#c68642"/>
++          {/* Hair */}
++          <ellipse cx="30" cy="15" rx="13" ry="6" fill="#3d2b1f"/>
++          {/* Eyes */}
++          <circle cx="24" cy="27" r="2" fill="#1d1a16"/>
++          <circle cx="36" cy="27" r="2" fill="#1d1a16"/>
++        </svg>
++        <p className="text-[10px] text-center text-ink-3 mt-1">Probador virtual</p>
+       </div>
+     </div>
+   );

@@ -243,3 +243,48 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ───────────────── Modo oscuro ───────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #1a1714;
+    --color-paper-2: #252118;
+    --color-card: #211e1a;
+    --color-ink: #f0ebe3;
+    --color-ink-2: #b8afa5;
+    --color-ink-3: #8a8178;
+    --color-line: #332e28;
+    --color-line-strong: #4a4238;
+
+    --color-clay: #d4694e;
+    --color-clay-dark: #c05840;
+    --color-clay-soft: #3d1f16;
+    --color-sea: #5a9994;
+    --color-sea-soft: #152a28;
+    --color-sun: #c99a3a;
+    --color-sun-soft: #2a2008;
+    --color-danger: #d1524c;
+    --color-danger-soft: #3a1512;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-paper: #1a1714;
+  --color-paper-2: #252118;
+  --color-card: #211e1a;
+  --color-ink: #f0ebe3;
+  --color-ink-2: #b8afa5;
+  --color-ink-3: #8a8178;
+  --color-line: #332e28;
+  --color-line-strong: #4a4238;
+
+  --color-clay: #d4694e;
+  --color-clay-dark: #c05840;
+  --color-clay-soft: #3d1f16;
+  --color-sea: #5a9994;
+  --color-sea-soft: #152a28;
+  --color-sun: #c99a3a;
+  --color-sun-soft: #2a2008;
+  --color-danger: #d1524c;
+  --color-danger-soft: #3a1512;
+}

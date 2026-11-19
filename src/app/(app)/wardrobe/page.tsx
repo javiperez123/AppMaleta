@@ -7,6 +7,7 @@ import { Notice } from "@/components/Notice";
 import { requireUser } from "@/server/auth";
 import { getUserData } from "@/server/data";
 import { WardrobeBrowser } from "./WardrobeBrowser";
+import { BulkUpload } from "./BulkUpload";
 
 export const metadata: Metadata = { title: "Armario" };
 
@@ -49,7 +50,12 @@ export default async function WardrobePage({ searchParams }: { searchParams: Pro
           pantalones, una chaqueta y tu calzado favorito.
         </EmptyState>
       ) : (
-        <WardrobeBrowser garments={garments} highlight={sp.nueva ?? sp.editada} />
+        <>
+          <div className="mb-6">
+            <BulkUpload />
+          </div>
+          <WardrobeBrowser garments={garments} highlight={sp.nueva ?? sp.editada} />
+        </>
       )}
     </>
   );
