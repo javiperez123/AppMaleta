@@ -8,10 +8,12 @@ import { getUserData } from "@/server/data";
 import { formatRange, todayIso } from "@/lib/domain/dates";
 import { tripBounds } from "@/lib/domain/trip";
 import { buildPackingList } from "@/lib/domain/packing";
+import { buildCapsule } from "@/lib/domain/capsule";
 import { BAGGAGE_LABELS } from "@/lib/domain/labels";
 import { TripToolbar } from "./TripToolbar";
 import { DayCard } from "./DayCard";
 import { PackingView } from "./PackingView";
+import { CapsuleView } from "./CapsuleView";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -34,7 +36,7 @@ export default async function TripPage({
   const trip = data.trips.find((t) => t.id === id);
   if (!trip) notFound();
 
-  const tab = sp.tab === "maleta" ? "maleta" : "dias";
+  const tab = sp.tab === "maleta" ? "maleta" : sp.tab === "capsula" ? "capsula" : "dias";
   const { start, end } = tripBounds(trip.stops);
   const today = todayIso();
   const withWeather = trip.days.filter((d) => d.weather).length;
@@ -43,6 +45,7 @@ export default async function TripPage({
   const cats = new Set(data.garments.map((g) => g.category));
   const canDress = ((cats.has("top") && cats.has("bottom")) || cats.has("dress")) && cats.has("shoes");
   const packing = buildPackingList(trip, data.garments);
+  const capsule = buildCapsule(data.garments, trip, trip.days);
 
   return (
     <>
@@ -95,17 +98,18 @@ export default async function TripPage({
         startsAfterHorizon={start > today}
       />
 
-      <nav aria-label="Secciones del viaje" className="mb-6 mt-6 flex gap-1 border-b border-line print:hidden">
+      <nav aria-label="Secciones del viaje" className="mb-6 mt-6 flex gap-1 border-b border-line print:hidden overflow-x-auto">
         {[
-          { key: "dias", label: "Looks por día", count: `${withLook}/${trip.days.length}` },
-          { key: "maleta", label: "Maleta", count: `${packing.packedCount}/${packing.totalCount}` },
+          { key: "dias", label: "Looks por día", count: `${withLook}/${trip.days.length}`, href: `/trip/${trip.id}` },
+          { key: "maleta", label: "Maleta", count: `${packing.packedCount}/${packing.totalCount}`, href: `/trip/${trip.id}?tab=maleta` },
+          { key: "capsula", label: "Cápsula", count: `${capsule.ids.length}`, href: `/trip/${trip.id}?tab=capsula` },
         ].map((t) => (
           <Link
             key={t.key}
-            href={t.key === "dias" ? `/trip/${trip.id}` : `/trip/${trip.id}?tab=maleta`}
+            href={t.href}
             aria-current={tab === t.key ? "page" : undefined}
             scroll={false}
-            className={`-mb-px flex min-h-12 items-center gap-2 border-b-2 px-4 font-semibold ${
+            className={`-mb-px flex shrink-0 min-h-12 items-center gap-2 border-b-2 px-4 font-semibold ${
               tab === t.key ? "border-clay text-ink" : "border-transparent text-ink-3 hover:text-ink"
             }`}
           >
@@ -120,6 +124,7 @@ export default async function TripPage({
             <li key={day.date}>
               <DayCard
                 tripId={trip.id}
+                tripName={trip.name}
                 day={day}
                 index={i}
                 isToday={day.date === today}
@@ -129,6 +134,13 @@ export default async function TripPage({
             </li>
           ))}
         </ol>
+      ) : tab === "capsula" ? (
+        <CapsuleView
+          tripId={trip.id}
+          result={capsule}
+          garments={data.garments}
+          currentCapsuleIds={trip.capsuleIds}
+        />
       ) : packing.totalGarments === 0 && packing.basics.length === 0 ? (
         <div className="card p-8 text-center">
           <Shirt size={28} className="mx-auto text-ink-3" aria-hidden="true" />

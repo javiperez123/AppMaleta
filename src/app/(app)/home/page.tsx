@@ -130,7 +130,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                   <ul className="mt-3 grid grid-cols-4 gap-2.5">
                     {todayGarments.map((g) => (
                       <li key={g.id} className="aspect-[3/4] overflow-hidden rounded-xl border border-line">
-                        <GarmentImage garment={g} sizes="sm" />
+                        <GarmentImage garment={g} sizes="sm" thumb />
                       </li>
                     ))}
                   </ul>
@@ -172,7 +172,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 .reverse()
                 .map((g) => (
                   <li key={g.id} className="aspect-square overflow-hidden rounded-xl border border-line">
-                    <GarmentImage garment={g} sizes="sm" />
+                    <GarmentImage garment={g} sizes="sm" thumb />
                   </li>
                 ))}
             </ul>

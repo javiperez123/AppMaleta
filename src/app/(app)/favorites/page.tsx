@@ -53,7 +53,7 @@ export default async function FavoritesPage() {
                   {items.map((g) => (
                     <li key={g.id}>
                       <div className="aspect-[3/4] overflow-hidden rounded-lg border border-line">
-                        <GarmentImage garment={g} sizes="sm" />
+                        <GarmentImage garment={g} sizes="sm" thumb />
                       </div>
                       <p className="mt-1 truncate text-[11px] text-ink-2">{g.name}</p>
                     </li>

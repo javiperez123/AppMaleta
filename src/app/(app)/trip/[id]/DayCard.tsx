@@ -26,6 +26,7 @@ import {
   toggleFavoriteAction,
 } from "@/app/actions";
 import { GarmentImage } from "@/components/GarmentImage";
+import { ShareLookButton } from "./ShareLookButton";
 import { ACTIVITY_TYPES, GARMENT_CATEGORIES, type FavoriteLook, type Garment, type GarmentCategory, type TripDay } from "@/lib/domain/types";
 import { ACTIVITY_LABELS, CATEGORY_LABELS, CATEGORY_PLURAL } from "@/lib/domain/labels";
 import { formatLong } from "@/lib/domain/dates";
@@ -34,6 +35,7 @@ const isRedirect = (e: unknown) => (e as { digest?: string })?.digest?.startsWit
 
 export function DayCard({
   tripId,
+  tripName,
   day,
   index,
   isToday,
@@ -41,6 +43,7 @@ export function DayCard({
   favorites,
 }: {
   tripId: string;
+  tripName: string;
   day: TripDay;
   index: number;
   isToday: boolean;
@@ -154,7 +157,7 @@ export function DayCard({
                 {lookGarments.map((g) => (
                   <li key={g.id} className="group relative">
                     <div className="aspect-[3/4] overflow-hidden rounded-xl border border-line bg-paper-2">
-                      <GarmentImage garment={g} sizes="sm" />
+                      <GarmentImage garment={g} sizes="sm" thumb />
                     </div>
                     <p className="mt-1 truncate text-xs font-medium" title={g.name}>
                       {g.name}
@@ -246,6 +249,12 @@ export function DayCard({
                 >
                   <Ban size={16} aria-hidden="true" /> Descartar
                 </button>
+                <ShareLookButton
+                  day={day}
+                  look={look}
+                  garments={lookGarments}
+                  tripName={tripName}
+                />
               </>
             ) : (
               <>
@@ -536,7 +545,7 @@ function GarmentPicker({
                             />
                             <span className="block overflow-hidden rounded-xl border-2 border-transparent peer-checked:border-clay peer-focus-visible:outline peer-focus-visible:outline-3 peer-focus-visible:outline-sea">
                               <span className="block aspect-[3/4] bg-paper-2">
-                                <GarmentImage garment={g} sizes="sm" />
+                                <GarmentImage garment={g} sizes="sm" thumb />
                               </span>
                             </span>
                             <span className="mt-1 block truncate text-xs font-medium">

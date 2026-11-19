@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import { BottomNav, SideNav } from "./NavLinks";
 import { logoutAction } from "@/app/actions";
 import type { PublicUser } from "@/server/auth";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function AppShell({ user, children }: { user: PublicUser; children: React.ReactNode }) {
   return (
@@ -27,11 +28,14 @@ export function AppShell({ user, children }: { user: PublicUser; children: React
               <span className="block truncate text-xs">{user.email}</span>
             </span>
           </Link>
-          <form action={logoutAction}>
-            <button type="submit" className="btn btn-ghost mt-1 w-full justify-start px-3">
-              <LogOut size={18} aria-hidden="true" /> Cerrar sesión
-            </button>
-          </form>
+          <div className="flex items-center justify-between mt-1">
+            <form action={logoutAction} className="flex-1">
+              <button type="submit" className="btn btn-ghost w-full justify-start px-3">
+                <LogOut size={18} aria-hidden="true" /> Cerrar sesión
+              </button>
+            </form>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
@@ -39,6 +43,7 @@ export function AppShell({ user, children }: { user: PublicUser; children: React
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur lg:hidden print:hidden">
         <Logo href="/home" />
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           <Link href="/train" className="btn btn-ghost btn-icon" aria-label="Mi estilo">
             <Sparkles size={20} aria-hidden="true" />
           </Link>

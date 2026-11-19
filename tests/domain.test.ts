@@ -140,3 +140,93 @@ test("clima: usa previsión cerca y histórico lejos; si la API falla, no invent
   const none = await fetchWeatherRange(38.7, -9.1, "2026-05-02", "2026-05-03", "2026-05-01", failing);
   assert.equal(none.size, 0);
 });
+
+// =================== Nuevas funciones: insights + capsule + disponibilidad ===================
+
+import { buildInsights } from "../src/lib/domain/insights.ts";
+import { buildCapsule } from "../src/lib/domain/capsule.ts";
+import { activeSeasonsFor, generateLook } from "../src/lib/domain/engine.ts";
+import { ctxBase } from "./helpers.ts";
+
+test("insights: vacío si no hay prendas", () => {
+  const ins = buildInsights([]);
+  assert.equal(ins.total, 0);
+  assert.equal(ins.potentialCombos, 0);
+});
+
+test("insights: cuenta categorías y combos", () => {
+  const gs = [
+    garment({ name: "Camiseta", category: "top", color: "blanco", formality: "casual", warmth: "light" }),
+    garment({ name: "Pantalón", category: "bottom", color: "negro", formality: "casual", warmth: "medium" }),
+    garment({ name: "Zapatillas", category: "shoes", color: "blanco", formality: "casual" }),
+  ];
+  const ins = buildInsights(gs);
+  assert.equal(ins.total, 3);
+  assert.equal(ins.potentialCombos, 1); // 1 top * 1 bottom * 1 shoe
+  assert.equal(ins.byCategory.find(c => c.category === "top")?.count, 1);
+});
+
+test("insights: nunca usadas / más usada", () => {
+  const g1 = garment({ name: "A", category: "top" });
+  const g2 = garment({ name: "B", category: "top" });
+  const usedCounts = new Map([[g1.id, 5]]);
+  const ins = buildInsights([g1, g2], usedCounts);
+  assert.equal(ins.mostUsedId, g1.id);
+  assert.ok(ins.neverUsedIds.includes(g2.id));
+  assert.ok(!ins.neverUsedIds.includes(g1.id));
+});
+
+test("insights: prendas no disponibles detectadas", () => {
+  const g = garment({ name: "A", category: "top", availability: "laundry" });
+  const ins = buildInsights([g]);
+  assert.ok(ins.unavailableIds.includes(g.id));
+  assert.ok(ins.availablePercent < 100);
+});
+
+test("capsule: sin prendas devuelve vacío", () => {
+  const t = trip([day("2026-06-01")]);
+  const r = buildCapsule([], t, [day("2026-06-01")]);
+  assert.equal(r.ids.length, 0);
+});
+
+test("capsule: selecciona prendas y calcula combos", () => {
+  const gs = [
+    garment({ name: "Camiseta", category: "top", volume: "low" }),
+    garment({ name: "Pantalón", category: "bottom", volume: "low" }),
+    garment({ name: "Zapatillas", category: "shoes", volume: "medium" }),
+    garment({ name: "Vestido", category: "dress", volume: "low" }),
+  ];
+  const t = trip([day("2026-06-01"), day("2026-06-02")]);
+  const r = buildCapsule(gs, t, t.days);
+  assert.ok(r.ids.length > 0);
+  assert.ok(r.combos > 0);
+  assert.ok(r.usedCapacity <= r.maxCapacity);
+});
+
+test("capsule: no incluye prendas no disponibles", () => {
+  const unavail = garment({ name: "Lavandería", category: "top", availability: "laundry" });
+  const avail = garment({ name: "Disponible", category: "top" });
+  const t = trip([day("2026-06-01")]);
+  const r = buildCapsule([unavail, avail], t, t.days);
+  assert.ok(!r.ids.includes(unavail.id));
+});
+
+test("engine: prendas no disponibles (laundry) no entran en el look", () => {
+  const top = garment({ name: "Camiseta", category: "top", formality: "casual", warmth: "light" });
+  const bottom = garment({ name: "Pantalón", category: "bottom", formality: "casual", warmth: "light" });
+  const shoes = garment({ name: "Zapatillas", category: "shoes", formality: "casual" });
+  const topLaundry = garment({ name: "TopSucia", category: "top", formality: "casual", warmth: "light", availability: "laundry" });
+  const d = day("2026-07-01");
+  const ctx = { ...ctxBase(), now: "2026-07-01T12:00:00Z" };
+  const look = generateLook([top, bottom, shoes, topLaundry], d, ctx);
+  assert.ok(!look.garmentIds.includes(topLaundry.id), "prenda en lavandería no debe aparecer en el look");
+});
+
+test("activeSeasonsFor: hemisferio norte y sur", () => {
+  // Julio en norte = verano
+  const northJuly = activeSeasonsFor("2026-07-15", 40);
+  assert.ok(northJuly.includes("summer"));
+  // Julio en sur = invierno
+  const southJuly = activeSeasonsFor("2026-07-15", -40);
+  assert.ok(southJuly.includes("winter"));
+});

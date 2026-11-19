@@ -17,16 +17,20 @@ export function GarmentImage({
   garment,
   className = "",
   sizes = "lg",
+  thumb = false,
 }: {
   garment: Pick<Garment, "imageId" | "name" | "category" | "color" | "colorHex">;
   className?: string;
   sizes?: "sm" | "lg";
+  /** Pide la versión miniatura (200px WebP) — ideal en listas */
+  thumb?: boolean;
 }) {
   if (garment.imageId) {
+    const src = `/api/photos/${garment.imageId}${thumb ? "?s=t" : ""}`;
     return (
       // eslint-disable-next-line @next/next/no-img-element -- fotos privadas servidas por /api/photos con la cookie de sesión; el optimizador de next/image no puede autenticarse
       <img
-        src={`/api/photos/${garment.imageId}`}
+        src={src}
         alt={garment.name}
         loading="lazy"
         decoding="async"

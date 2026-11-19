@@ -130,7 +130,7 @@ export function WardrobeBrowser({ garments, highlight }: { garments: Garment[]; 
                   }`}
                 >
                   <div className="relative aspect-[4/5] bg-paper-2">
-                    <GarmentImage garment={g} />
+                    <GarmentImage garment={g} thumb />
                     {missing.length > 0 && (
                       <span className="badge absolute left-2 top-2 !bg-sun-soft !text-sun">
                         <TriangleAlert size={12} aria-hidden="true" /> Completar
